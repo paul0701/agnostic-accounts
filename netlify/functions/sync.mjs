@@ -1,5 +1,5 @@
 import { setCorsOrigin, preflight } from "../lib/core.mjs";
-import { players, boards, fail, json, currentUser, readBody, weekId, clamp, setupError, maskEmail, GAME_RE } from "../lib/core.mjs";
+import { players, boards, fail, json, currentUser, readBody, weekId, clamp, cleanState, setupError, maskEmail, GAME_RE } from "../lib/core.mjs";
 
 const BOARD_SIZE = 100;
 
@@ -28,7 +28,7 @@ export default async (req) => {
   if (req.method === "GET") return json(200, { username: user.username, games: user.games || {}, email: maskEmail(user.email) });
   if (req.method !== "POST") return fail(405, "Use GET or POST");
 
-  const { game = "", best = 0, theme = null, week = null, week_best = 0 } = await readBody(req);
+  const { game = "", best = 0, theme = null, week = null, week_best = 0, state = undefined } = await readBody(req);
   if (!GAME_RE.test(game)) return fail(400, "Bad game id");
   const prev = (user.games || {})[game] || {};
   const score = Math.max(Number(prev.best) || 0, clamp(best));
@@ -37,12 +37,15 @@ export default async (req) => {
   let weekBest = prev.week && prev.week.id === wk ? Number(prev.week.best) || 0 : 0;
   if (week === wk) weekBest = Math.max(weekBest, clamp(week_best));
   const best2 = Math.max(score, weekBest);
-  user.games = { ...(user.games || {}), [game]: { best: best2, theme: t, week: { id: wk, best: weekBest }, updatedAt: new Date().toISOString() } };
+  const st = cleanState(state, prev.state);
+  const entry = { best: best2, theme: t, week: { id: wk, best: weekBest }, updatedAt: new Date().toISOString() };
+  if (st !== undefined) entry.state = st;
+  user.games = { ...(user.games || {}), [game]: entry };
   await players().setJSON(key, user);
 
   const rank = await placeOnBoard(game, key, user.username, best2);
   const weekRank = await placeOnBoard(game + "@" + wk, key, user.username, weekBest);
-  return json(200, { best: best2, theme: t, rank, week: wk, week_best: weekBest, week_rank: weekRank });
+  return json(200, { best: best2, theme: t, rank, week: wk, week_best: weekBest, week_rank: weekRank, state: st });
 };
 
 export const config = { path: ["/api/sync", "/api/me"] };

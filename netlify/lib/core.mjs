@@ -147,6 +147,19 @@ export function weekId(d = new Date()) {
 
 export const clamp = (n) => Math.max(0, Math.min(Math.floor(Number(n) || 0), 1e7));
 
+// Optional per-game state blob (achievements, skins, streaks) that richer games
+// sync across devices. Treated as opaque data, size-capped, and left unchanged
+// when the caller sends nothing (undefined/null) — so leaderboard-only games are
+// unaffected. Send {} to clear it.
+export function cleanState(incoming, prev) {
+  if (incoming === undefined || incoming === null) return prev;
+  try {
+    const s = JSON.stringify(incoming);
+    if (typeof s !== "string" || s.length > 20000) return prev;
+    return JSON.parse(s);
+  } catch { return prev; }
+}
+
 export async function readBody(req) {
   try { return await req.json(); } catch { return {}; }
 }
