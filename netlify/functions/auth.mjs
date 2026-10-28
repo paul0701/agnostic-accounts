@@ -24,7 +24,7 @@ export default async (req) => {
   if (path.endsWith("/change-pin")) return changePin(req);
   const action = path.endsWith("/register") ? "register" : "login";
   const { username = "", pin = "", email = "" } = await readBody(req);
-  if (!NAME_RE.test(username)) return fail(400, "Username must be 3-16 letters, numbers or _");
+  if (!NAME_RE.test(username)) return fail(400, "Username must be 2-16 letters, numbers, spaces, - or _");
   if (!PIN_RE.test(pin)) return fail(400, "PIN must be exactly 6 digits");
   const mail = action === "register" ? cleanEmail(email) : "";
   if (mail === null) return fail(400, "That email address does not look right");

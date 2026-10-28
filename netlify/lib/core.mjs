@@ -4,7 +4,10 @@ import crypto from "node:crypto";
 const TOKEN_DAYS = 180;
 const MAX_FAILS = 5;
 const LOCK_MS = 15 * 60 * 1000;
-export const NAME_RE = /^[A-Za-z0-9_]{3,16}$/;
+// Superset of every game's own name rule (the widget games enforce the stricter
+// letters/numbers/underscore client-side; the custom games also allow spaces and
+// hyphens and a 2-char minimum). Kept wide here so no game's valid name is rejected.
+export const NAME_RE = /^[A-Za-z0-9 _-]{2,16}$/;
 export const PIN_RE = /^\d{6}$/;
 export const GAME_RE = /^[a-z0-9-]{1,32}$/;
 export { MAX_FAILS, LOCK_MS };
