@@ -9,8 +9,11 @@ export const PIN_RE = /^\d{6}$/;
 export const GAME_RE = /^[a-z0-9-]{1,32}$/;
 export { MAX_FAILS, LOCK_MS };
 
-export const players = () => getStore("players");
-export const boards = () => getStore("leaderboards");
+// Strong consistency so a read always reflects the latest write: a player who
+// registers and submits a score seconds later must not race ahead of the store
+// (eventual consistency, the default, can lag a few seconds and 404 the account).
+export const players = () => getStore({ name: "players", consistency: "strong" });
+export const boards = () => getStore({ name: "leaderboards", consistency: "strong" });
 
 // --- CORS: games live on their own subdomains and call this central service
 // cross-origin. We reflect any agnosticsolutions.co.uk / netlify.app origin (and
