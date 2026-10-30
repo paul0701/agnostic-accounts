@@ -18,6 +18,26 @@ export { MAX_FAILS, LOCK_MS };
 export const players = () => getStore({ name: "players", consistency: "strong" });
 export const boards = () => getStore({ name: "leaderboards", consistency: "strong" });
 
+// --- Seasons: a wipe in one switch. Every score belongs to a season. Setting SCORE_SEASON
+// in the Netlify environment (and redeploying) starts a new one: the boards and every
+// player's bests read as empty, devices clear their own copy the next time they load, and
+// anything still on the old season is refused. Nothing is deleted: old entries stay in the
+// stores and come straight back if the season is set back. Season 1 keeps the original
+// store keys, so today's data is season 1 with no migration.
+export const season = () => Math.max(1, parseInt(process.env.SCORE_SEASON || "1", 10) || 1);
+export const gameKey = (game) => (season() === 1 ? game : `${game}~s${season()}`);
+export const boardName = (name) => (season() === 1 ? name : `${name}~s${season()}`);
+// the player's bests for the current season only, keyed by plain game id
+export function liveGames(user) {
+  const s = season(), out = {};
+  for (const [k, e] of Object.entries((user && user.games) || {})) {
+    const m = /^(.*)~s(\d+)$/.exec(k);
+    if ((m ? Number(m[2]) : 1) !== s) continue;
+    out[m ? m[1] : k] = e;
+  }
+  return out;
+}
+
 // --- CORS: games live on their own subdomains and call this central service
 // cross-origin. We reflect any agnosticsolutions.co.uk / netlify.app origin (and
 // localhost for dev); identity is Bearer-token based, so no cookies are shared.
@@ -84,7 +104,7 @@ export async function currentUser(req) {
   return { key: tok.sub, user };
 }
 
-export const userOut = (key, u) => ({ token: makeToken(key, u.tv || 0), username: u.username, games: u.games || {}, email: maskEmail(u.email) });
+export const userOut = (key, u) => ({ token: makeToken(key, u.tv || 0), username: u.username, games: liveGames(u), season: season(), email: maskEmail(u.email) });
 
 // ---- optional recovery email ----
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;

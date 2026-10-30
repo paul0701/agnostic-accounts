@@ -3,5 +3,10 @@
   "private": true,
   "type": "module",
   "description": "Central accounts + leaderboard service for the Agnostic Solutions games ecosystem. One login (username + 6-digit PIN + email recovery); scores are kept per game.",
-  "dependencies": { "@netlify/blobs": "^8.1.0" }
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  },
+  "scripts": {
+    "test": "node --import ./test/register.mjs --test \"test/*.test.mjs\""
+  }
 }
